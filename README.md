@@ -1,27 +1,26 @@
-# expense-tracker
-# File-organizer
+# Expense Tracker
 
-A small Python toolkit for tidying and moving files. It has two tools:
-
-- **File Organizer** (`file_checker.py`): a command-line script that sorts the files in a folder into category subfolders such as Images, Videos and Documents.
-- **Smart File Transfer** (`file_transfer_ui.py`): a PyQt6 desktop app that copies files to a destination folder with drag and drop, a progress bar, speed and ETA readouts, and pause/resume.
+A desktop expense tracker built with Python, PyQt6 and SQLite. Add, edit, search and delete expenses, see your totals at a glance, view category and monthly charts, and export everything to CSV.
 
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![PyQt6](https://img.shields.io/badge/GUI-PyQt6-41cd52)
+![SQLite](https://img.shields.io/badge/storage-SQLite-003B57)
+![Matplotlib](https://img.shields.io/badge/charts-Matplotlib-11557c)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<!-- Add a screenshot of the transfer window here:
-![Smart File Transfer](docs/transfer-ui.png)
+<!-- Add a screenshot of the main window and a chart here:
+![Expense Tracker](docs/main-window.png)
 -->
 
 ## Table of Contents
 
 - [Features](#features)
 - [Project Structure](#project-structure)
+- [How It Works](#how-it-works)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Building an Executable](#building-an-executable)
+- [Data Storage](#data-storage)
 - [Limitations](#limitations)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
@@ -29,57 +28,60 @@ A small Python toolkit for tidying and moving files. It has two tools:
 
 ## Features
 
-### File Organizer (CLI)
-
-- Sorts files in a folder into subfolders by extension
-- Creates category folders only when needed
-- Skips existing subfolders and moves unrecognized files to `Others`
-- Prints each move as it happens
-
-| Folder | Extensions |
-| --- | --- |
-| Images | `.jpg` `.jpeg` `.png` `.gif` `.bmp` `.webp` |
-| Videos | `.mp4` `.mkv` `.avi` `.mov` |
-| Music | `.mp3` `.wav` `.aac` |
-| Documents | `.pdf` `.docx` `.doc` `.txt` `.xlsx` `.pptx` |
-| Archives | `.zip` `.rar` `.7z` |
-| Programs | `.exe` `.msi` |
-| Python | `.py` |
-| Others | everything else |
-
-### Smart File Transfer (GUI)
-
-- Choose files with a file dialog or drag and drop them into the window
-- Choose any destination folder (created if it does not exist)
-- Copies files with `shutil.copy2`, which preserves timestamps and metadata
-- Live progress bar, transfer speed (MB/s) and estimated time remaining
-- Pause and resume a transfer
-- Renames a file (`name_<n>.ext`) instead of overwriting when the name already exists at the destination
-- Runs the copy in a background thread, so the window stays responsive
-- Built-in log panel
+- **Full expense management:** add, edit and delete entries with a title, amount, category, date and notes
+- **Dashboard cards:** total spent, spent this month, and number of transactions
+- **Search:** find expenses by title, category or notes
+- **Charts:** category breakdown (pie chart) and month-by-month totals (bar chart), drawn with Matplotlib
+- **CSV export:** save all expenses to a spreadsheet-friendly file
+- **Local storage:** everything is saved in a SQLite database on your machine
+- **Categories:** Food, Travel, Shopping, Bills, Health, Entertainment, Others
+- Dark-themed interface with a calendar date picker
 
 ## Project Structure
 
 ```text
-File-organizer/
-├── file_checker.py        # CLI: sort a folder's files into category folders
-├── file_transfer_ui.py    # PyQt6 app: copy files with progress, speed, ETA, pause/resume
-└── FileOrganizer.spec     # PyInstaller build configuration
+expense-tracker/
+├── main.py            # Application entry point
+├── ui.py              # Main window and add/edit dialog (PyQt6)
+├── database.py        # SQLite operations (ExpenseDatabase class)
+├── charts.py          # Pie and monthly bar charts (Matplotlib in a Qt widget)
+├── export.py          # CSV export
+├── requirements.txt   # Python dependencies
+└── expense.db         # SQLite database (created on first run)
 ```
+
+## How It Works
+
+```mermaid
+flowchart LR
+    A[main.py] --> B[ui.py<br/>ExpenseWindow]
+    B --> C[database.py<br/>ExpenseDatabase]
+    C --> D[(expense.db)]
+    B --> E[charts.py<br/>ExpenseChart]
+    B --> F[export.py<br/>CSV export]
+    C -- totals --> E
+    C -- rows --> F
+```
+
+1. `main.py` starts the Qt application and opens `ExpenseWindow`.
+2. The window loads all expenses from SQLite and fills the table and dashboard cards.
+3. Add, edit and delete actions write to the database and then refresh the table.
+4. The chart buttons ask the database for category or monthly totals and display them in a separate window.
+5. **Export CSV** writes all stored expenses to a file.
 
 ## Requirements
 
 - Python 3.8+
-- [PyQt6](https://pypi.org/project/PyQt6/) (only for the transfer app)
-- [PyInstaller](https://pyinstaller.org/) (only if you want to build an executable)
+- [PyQt6](https://pypi.org/project/PyQt6/)
+- [Matplotlib](https://pypi.org/project/matplotlib/)
 
-`file_checker.py` uses only the Python standard library.
+SQLite support (`sqlite3`) is built into Python. All dependencies are listed in `requirements.txt`.
 
 ## Installation
 
 ```bash
-git clone https://github.com/rudradevil619-byte/File-organizer.git
-cd File-organizer
+git clone https://github.com/rudradevil619-byte/expense-tracker.git
+cd expense-tracker
 python -m venv .venv
 ```
 
@@ -93,78 +95,55 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
-Install PyQt6 (needed for the transfer app):
+Install dependencies:
 
 ```bash
-pip install PyQt6
+pip install -r requirements.txt
 ```
 
 ## Usage
 
-### Organize a folder
+Run the app from the project folder:
 
 ```bash
-python file_checker.py
+python main.py
 ```
 
-Enter the full path of the folder when prompted:
+| Action | How |
+| --- | --- |
+| Add an expense | Click **Add**, fill in the form and click **Save** |
+| Edit an expense | Select a row, click **Edit**, change the details and click **Save** |
+| Delete an expense | Select a row, click **Delete** and confirm |
+| Search | Type a keyword and click **Search** (clear the box and search again to show everything) |
+| Category chart | Click **Pie Chart** |
+| Monthly chart | Click **Monthly Chart** |
+| Export | Click **Export CSV** |
 
-```text
-Enter folder path: C:\Users\you\Downloads
-Moved: photo.jpg -> Images
-Moved: report.pdf -> Documents
-Moved: notes.xyz -> Others
+## Data Storage
 
-Organization completed!
-```
+Expenses are stored in a SQLite file named `expense.db`, created in the folder you run the app from. Each record has an ID, title, amount, category, date (`YYYY-MM-DD`) and optional notes.
 
-Only files directly inside the folder are moved. Existing subfolders are left alone.
-
-> **Tip:** Try it on a copy of a folder first. Files are moved, not copied, and there is no undo.
-
-### Transfer files
-
-```bash
-python file_transfer_ui.py
-```
-
-1. Click **Choose Files**, or drag files into the window.
-2. Click **Choose Folder** and pick a destination.
-3. Click **Start Transfer**.
-4. Use **Pause Transfer** / **Resume Transfer** as needed.
-5. Click **Clear** to reset the window.
-
-## Building an Executable
-
-The repository includes a PyInstaller spec file. With PyInstaller installed:
-
-```bash
-pip install pyinstaller
-pyinstaller FileOrganizer.spec
-```
-
-The built executable appears in the `dist/` folder.
+Back up `expense.db` to keep your history. Deleting it starts you off with an empty tracker.
 
 ## Limitations
 
-- `file_checker.py` moves files without confirmation, has no undo or dry-run mode, and does not handle name collisions in the destination folder.
-- It is not recursive: files inside subfolders are not organized.
-- Categories and extensions are hard-coded in the script.
-- Pause in the transfer app takes effect between files, not in the middle of a single large file.
-- The transfer app copies files only (it does not move them) and supports individual files rather than whole folders.
-- **Clear** resets the window but does not cancel a transfer that is already running.
+- The currency symbol is fixed to `$`.
+- Search filters the table only. The dashboard cards always show totals for all expenses.
+- There is no input validation, so an entry with an empty title or a zero amount can be saved.
+- The database path is relative, so run `python main.py` from the project folder.
+- Categories are hard-coded in `ui.py`.
 
 ## Roadmap
 
-- [ ] Dry-run mode and a confirmation prompt for the organizer
-- [ ] Undo log for moved files
-- [ ] Handle duplicate file names when organizing
-- [ ] Command-line arguments (`python file_checker.py <folder>`) and a `main()` guard
-- [ ] Configurable categories (JSON or YAML)
-- [ ] Recursive organizing option
-- [ ] Add an Organize tab to the GUI so both tools live in one app
-- [ ] Real cancel button and folder support in the transfer app
-- [ ] `requirements.txt` and unit tests
+- [ ] Configurable currency symbol
+- [ ] Input validation for title and amount
+- [ ] Custom categories
+- [ ] Filter by date range and category
+- [ ] Budget limits and monthly budget alerts
+- [ ] Sortable table columns
+- [ ] Import from CSV
+- [ ] Unit tests for `database.py`
+- [ ] Package as a Windows executable with PyInstaller
 
 ## Contributing
 
